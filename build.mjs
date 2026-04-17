@@ -36,18 +36,17 @@ function buildHTML(restaurants, cityConfig) {
   const cities = Object.keys(cityConfig).sort();
   const cuisines = [...new Set(restaurants.map(r => r.cuisine))].sort();
 
-  // Generate CSS for city buttons and cuisine badges
-  const cityButtonCSS = cities.map(c =>
-    `.city-btn[data-city="${c}"].active{background:${cityConfig[c].hex}}`
-  ).join('\n');
+  // Count restaurants per city
+  const cityCounts = {};
+  restaurants.forEach(r => { cityCounts[r.city] = (cityCounts[r.city] || 0) + 1; });
 
   const cityBadgeCSS = cities.map(c =>
     `.city-${cityConfig[c].abbr} .card-cuisine{background:${cityConfig[c].bg};color:${cityConfig[c].text}}`
   ).join('\n');
 
-  // Generate city filter buttons HTML
-  const cityButtonsHTML = cities.map(c =>
-    `      <button class="city-btn" data-city="${c}">${c}</button>`
+  // Generate city options for dropdown
+  const cityOptionsHTML = cities.map(c =>
+    `        <option value="${c}">${c} (${cityCounts[c] || 0})</option>`
   ).join('\n');
 
   // Generate getCityClass cases
@@ -83,14 +82,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;d
 #sidebar-header h1{font-size:18px;margin-bottom:4px;letter-spacing:0.5px}
 #sidebar-header .subtitle{font-size:12px;color:#a0c4ff;margin-bottom:12px}
 .filters{padding:12px 16px;border-bottom:1px solid #eee;background:#fafafa}
-.filter-row{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.filter-row{display:flex;gap:8px;margin-bottom:8px}
 .filter-row:last-child{margin-bottom:0}
-.city-btn{padding:6px 12px;border:1px solid #ddd;border-radius:20px;background:#fff;cursor:pointer;font-size:12px;font-weight:500;transition:all 0.2s}
-.city-btn:hover{border-color:#888}
-.city-btn.active{color:#fff;border-color:transparent}
-.city-btn[data-city="all"].active{background:#333;color:#fff}
-${cityButtonCSS}
-#cuisine-filter{width:100%;padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;background:#fff;cursor:pointer}
+.filter-select{flex:1;padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;background:#fff;cursor:pointer;appearance:auto}
+.filter-label{font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px}
+#search-input{width:100%;padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;background:#fff}
+#search-input:focus{outline:none;border-color:#2563eb;box-shadow:0 0 0 2px rgba(37,99,235,0.15)}
 .count-bar{padding:8px 16px;font-size:12px;color:#666;border-bottom:1px solid #eee;background:#fafafa}
 #restaurant-list{flex:1;overflow-y:auto;padding:8px}
 .restaurant-card{padding:12px;margin-bottom:6px;border-radius:10px;border:1px solid #eee;cursor:pointer;transition:all 0.15s}
@@ -124,12 +121,15 @@ ${cityBadgeCSS}
     <div class="subtitle">Chase Sapphire Reserve x OpenTable</div>
   </div>
   <div class="filters">
-    <div class="filter-row" id="city-filters">
-      <button class="city-btn active" data-city="all">All Cities</button>
-${cityButtonsHTML}
+    <div class="filter-row">
+      <select id="city-filter" class="filter-select">
+        <option value="all">All Cities (${restaurants.length})</option>
+${cityOptionsHTML}
+      </select>
+      <select id="cuisine-filter" class="filter-select"><option value="all">All Cuisines</option></select>
     </div>
     <div class="filter-row">
-      <select id="cuisine-filter"><option value="all">All Cuisines</option></select>
+      <input type="text" id="search-input" placeholder="Search restaurants..." />
     </div>
   </div>
   <div class="count-bar">Showing <strong id="count">0</strong> of <strong id="total">0</strong> restaurants</div>
@@ -224,6 +224,7 @@ cuisines.forEach(function(c) {
 
 var activeCity = 'all';
 var activeCuisine = 'all';
+var searchQuery = '';
 
 function getCityClass(city) {
 ${cityClassCases}
@@ -231,11 +232,13 @@ ${cityClassCases}
 }
 
 function getFilteredIndices() {
+  var q = searchQuery.toLowerCase();
   var result = [];
   restaurants.forEach(function(r, i) {
     var cityMatch = activeCity === 'all' || r.city === activeCity;
     var cuisineMatch = activeCuisine === 'all' || r.cuisine === activeCuisine;
-    if (cityMatch && cuisineMatch) result.push(i);
+    var searchMatch = !q || r.name.toLowerCase().indexOf(q) >= 0 || r.neighborhood.toLowerCase().indexOf(q) >= 0 || r.cuisine.toLowerCase().indexOf(q) >= 0;
+    if (cityMatch && cuisineMatch && searchMatch) result.push(i);
   });
   return result;
 }
@@ -305,18 +308,24 @@ function highlightCard(index) {
   }
 }
 
-document.querySelectorAll('.city-btn').forEach(function(btn) {
-  btn.addEventListener('click', function() {
-    document.querySelectorAll('.city-btn').forEach(function(b) { b.classList.remove('active'); });
-    btn.classList.add('active');
-    activeCity = btn.dataset.city;
-    render();
-  });
+document.getElementById('city-filter').addEventListener('change', function() {
+  activeCity = this.value;
+  render();
 });
 
 cuisineSelect.addEventListener('change', function() {
   activeCuisine = cuisineSelect.value;
   render();
+});
+
+var searchTimeout;
+document.getElementById('search-input').addEventListener('input', function() {
+  clearTimeout(searchTimeout);
+  var input = this;
+  searchTimeout = setTimeout(function() {
+    searchQuery = input.value;
+    render();
+  }, 200);
 });
 
 render();

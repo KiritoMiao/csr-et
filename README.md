@@ -2,7 +2,7 @@
 
 Interactive map of all Chase Sapphire Reserve Exclusive Tables restaurants across the US.
 
-**[View Live Map](https://kirito.github.io/opentable/)**
+**[View Live Map](https://kiritomiao.github.io/csr-et/)**
 
 ## Features
 

@@ -1,0 +1,13 @@
+{
+  "name": "opentable-sapphire-map",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "scrape": "node scrape.mjs",
+    "build": "node build.mjs",
+    "update": "node scrape.mjs && node build.mjs"
+  },
+  "dependencies": {
+    "puppeteer": "^24"
+  }
+}

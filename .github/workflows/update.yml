@@ -1,0 +1,39 @@
+name: Update Restaurant Data
+
+on:
+  schedule:
+    - cron: '17 9 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  scrape-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Scrape restaurants
+        run: node scrape.mjs
+        timeout-minutes: 30
+
+      - name: Build map
+        run: node build.mjs
+
+      - name: Commit and push if changed
+        env:
+          DATE_STAMP: ${{ github.run_id }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/restaurants.json index.html
+          git diff --cached --quiet || git commit -m "chore: update restaurant data"
+          git push

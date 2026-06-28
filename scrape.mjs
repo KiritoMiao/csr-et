@@ -227,7 +227,12 @@ async function scrapeCityPage(page, slug) {
 async function main() {
   console.log('=== OpenTable Sapphire Reserve Scraper ===\n');
 
-  const browser = await puppeteer.launch({ headless: true });
+  // --no-sandbox is required on CI runners (e.g. GitHub Actions ubuntu-latest),
+  // which block the unprivileged user namespaces Chromium's sandbox relies on.
+  const browser = await puppeteer.launch({
+    headless: true,
+    args: ['--no-sandbox', '--disable-setuid-sandbox'],
+  });
   const page = await browser.newPage();
   await page.setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
 
